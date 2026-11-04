@@ -15,6 +15,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Invalid input" });
     }
 
+    if (!process.env.GEMINI_API_KEY) {
+        console.error("GEMINI_API_KEY is missing");
+        return res.status(500).json({
+            error: "Server API key is not configured"
+        });
+    }
+
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const prompt = `You are a helpful assistant. Please create a learning path based on the following user data: ${JSON.stringify(userData)}
@@ -50,8 +57,13 @@ export default async function handler(req, res) {
             return res.status(200).json({ steps });
         } catch (error) {
             lastError = error;
-            console.warn(`${model} failed:`, error?.status || error?.message);
-            // Any failure (timeout, busy, bad JSON) moves on to the next model
+
+            console.error(`Gemini model ${model} failed:`, {
+                message: error.message,
+                status: error.status,
+                details: error.details,
+                stack: error.stack
+            });
         }
     }
 
